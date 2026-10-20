@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerência Segov IA - Torre de Controle e Gestão</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js Data Labels Plugin -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+    <!-- SheetJS (xlsx) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #030509; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+        @media print {
+            aside, header, .no-print { display: none !important; }
+            body { background: #ffffff !important; color: #000000 !important; }
+            main { padding: 0 !important; overflow: visible !important; background: #ffffff !important; }
+            .tab-content { display: none !important; }
+            #tab-reports { display: block !important; }
+            .print-card {
+                background: #ffffff !important;
+                border: 1px solid #cbd5e1 !important;
+                color: #000000 !important;
+                box-shadow: none !important;
+                page-break-inside: avoid;
+            }
+            .print-text-dark { color: #0f172a !important; }
+            .print-table th { background: #f1f5f9 !important; color: #0f172a !important; border-bottom: 2px solid #94a3b8 !important; }
+            .print-table td { color: #334155 !important; border-bottom: 1px solid #e2e8f0 !important; }
+        }
+    </style>
+</head>
+<body class="bg-[#030509] text-slate-100 flex h-screen overflow-hidden">
+
+    <!-- TELA DE LOGIN / AUTENTICAÇÃO (Campos limpos) -->
+    <div id="loginScreen" class="fixed inset-0 bg-[#030509] bg-opacity-95 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-[#070b14] border border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
+            <div class="absolute -right-10 -top-10 w-40 h-40 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none"></div>
+            
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-gradient-to-tr from-cyan-600 to-blue-600 rounded-2xl mx-auto flex items-center justify-center text-white text-2xl shadow-xl shadow-cyan-600/30 mb-4">
+                    <i class="fa-solid fa-brain"></i>
+                </div>
+                <h2 class="text-xl font-extrabold text-white">Gerência Segov IA</h2>
+                <p class="text-xs text-cyan-400 font-semibold tracking-wider uppercase mt-1">Acesso Restrito ao Painel Executivo</p>
+            </div>
+
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Usuário</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-3.5 top-3 text-slate-500 text-xs"></i>
+                        <input type="text" id="loginUser" placeholder="Digite seu usuário" required class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500 transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Senha</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-3.5 top-3 text-slate-500 text-xs"></i>
+                        <input type="password" id="loginPassword" placeholder="Digite sua senha" required class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500 transition">
+                    </div>
+                </div>
+
+                <div id="loginError" class="text-xs text-rose-400 text-center font-medium hidden">Usuário ou senha incorretos.</div>
+
+                <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs py-3 rounded-xl transition shadow-lg shadow-cyan-600/30 flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span>Entrar no Sistema</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MENU LATERAL FIXO À ESQUERDA -->
+    <aside class="w-72 bg-[#070b14] border-r border-slate-800/80 flex flex-col justify-between z-20 shadow-2xl">
+        <div class="flex flex-col h-full justify-between">
+            <div>
+                <!-- LOGO / HEADER DO MENU -->
+                <div class="p-6 border-b border-slate-800/80 flex items-center space-x-3.5">
+                    <div class="bg-gradient-to-tr from-cyan-600 to-blue-600 p-3 rounded-2xl text-white shadow-xl shadow-cyan-600/30 flex items-center justify-center">
+                        <i class="fa-solid fa-brain text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-extrabold text-sm tracking-wider text-white">Gerência Segov IA</h1>
+                        <p class="text-[10px] text-cyan-400 font-bold tracking-widest uppercase">Secretaria de Governo</p>
+                    </div>
+                </div>
+
+                <!-- NAVEGAÇÃO -->
+                <nav class="p-5 space-y-2">
+                    <button onclick="switchTab('workbooks')" class="nav-btn w-full flex items-center space-x-3.5 px-4 py-3 rounded-xl text-xs font-semibold transition bg-cyan-600 text-white shadow-lg shadow-cyan-600/30" data-target="workbooks">
+                        <div class="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-300">
+                            <i class="fa-solid fa-house text-sm"></i>
+                        </div>
+                        <span>Painel Principal</span>
+                    </button>
+
+                    <button onclick="switchTab('dashboard')" class="nav-btn w-full flex items-center space-x-3.5 px-4 py-3 rounded-xl text-xs font-semibold transition text-slate-400 hover:bg-slate-800/50 hover:text-white" data-target="dashboard">
+                        <div class="w-8 h-8 rounded-lg bg-slate-800/80 flex items-center justify-center text-slate-300">
+                            <i class="fa-solid fa-tower-broadcast text-sm"></i>
+                        </div>
+                        <span>Torre de Controle</span>
+                    </button>
+
+                    <button onclick="switchTab('sheet')" class="nav-btn w-full flex items-center space-x-3.5 px-4 py-3 rounded-xl text-xs font-semibold transition text-slate-400 hover:bg-slate-800/50 hover:text-white" data-target="sheet">
+                        <div class="w-8 h-8 rounded-lg bg-slate-800/80 flex items-center justify-center text-slate-300">
+                            <i class="fa-solid fa-table text-sm"></i>
+                        </div>
+                        <span>Planilha de Edição</span>
+                    </button>
+
+                    <button onclick="switchTab('search')" class="nav-btn w-full flex items-center space-x-3.5 px-4 py-3 rounded-xl text-xs font-semibold transition text-slate-400 hover:bg-slate-800/50 hover:text-white" data-target="search">
+                        <div class="w-8 h-8 rounded-lg bg-slate-800/80 flex items-center justify-center text-slate-300">
+                            <i class="fa-solid fa-magnifying-glass text-sm"></i>
+                        </div>
+                        <span>Pesquisa Avançada</span>
+                    </button>
+
+                    <button onclick="switchTab('reports')" class="nav-btn w-full flex items-center space-x-3.5 px-4 py-3 rounded-xl text-xs font-semibold transition text-slate-400 hover:bg-slate-800/50 hover:text-white" data-target="reports">
+                        <div class="w-8 h-8 rounded-lg bg-slate-800/80 flex items-center justify-center text-slate-300">
+                            <i class="fa-solid fa-file-invoice text-sm"></i>
+                        </div>
+                        <span>Relatórios Gerais</span>
+                    </button>
+                </nav>
+
+                <!-- CARTÃO DE PLANILHA ATIVA -->
+                <div class="px-5 my-2">
+                    <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-4 shadow-xl relative overflow-hidden">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                Planilha Ativa
+                            </span>
+                            <i class="fa-solid fa-database text-cyan-500 text-xs"></i>
+                        </div>
+                        <p id="activeWorkbookName" class="text-xs font-bold text-cyan-400 truncate">Nenhuma selecionada</p>
+                        <p id="activeWorkbookSub" class="text-[10px] text-slate-500 mt-1">Carregada no workspace</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RODAPÉ DO MENU -->
+            <div class="p-5 border-t border-slate-800/80 text-xs text-slate-500 flex justify-between items-center">
+                <span class="font-semibold text-slate-400">Versão 9.7 Pro</span>
+                <div class="flex items-center space-x-2">
+                    <button onclick="logout()" class="text-slate-400 hover:text-white transition p-2 rounded-lg bg-slate-800/80" title="Sair do Sistema">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                    <button onclick="resetAllData()" class="text-rose-400 hover:text-rose-300 transition p-2 rounded-lg bg-rose-500/10" title="Limpar dados">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="flex-1 flex flex-col overflow-hidden bg-[#030509]">
+        
+        <!-- BARRA SUPERIOR -->
+        <header class="h-18 bg-[#070b14]/90 backdrop-blur border-b border-slate-800/80 px-8 flex justify-between items-center z-10 no-print py-3">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl px-4 py-2 flex items-center space-x-3 shadow-sm">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                    <h2 id="currentSectionTitle" class="text-xs font-bold text-white tracking-wider uppercase">Painel Principal - Espaço de Trabalho</h2>
+                    <span class="text-slate-600">|</span>
+                    <span id="recordCountBadge" class="text-xs font-semibold text-cyan-400">0 registros</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <button onclick="speakWelcomeMessage()" class="bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-semibold px-3.5 py-2.5 rounded-xl transition border border-slate-700 flex items-center space-x-2" title="Ouvir mensagem de boas-vindas com voz humana natural">
+                    <i class="fa-solid fa-volume-high"></i>
+                    <span>Ouvir Boas-Vindas</span>
+                </button>
+
+                <button onclick="document.getElementById('excelFileInput').click()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition flex items-center space-x-2 shadow-lg shadow-emerald-600/20">
+                    <i class="fa-solid fa-file-excel"></i>
+                    <span>Importar Planilha Excel/CSV</span>
+                </button>
+                <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleExcelUpload(event)">
+                
+                <button onclick="exportCurrentWorkbook()" class="bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold px-3.5 py-2.5 rounded-xl transition border border-slate-700/80 flex items-center space-x-2 shadow-sm">
+                    <i class="fa-solid fa-download"></i>
+                    <span>Baixar Planilha (.xlsx)</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ÁREA DAS ABAS -->
+        <div class="flex-1 overflow-y-auto p-6 relative">
+
+            <!-- 1. PAINEL PRINCIPAL -->
+            <section id="tab-workbooks" class="tab-content space-y-6">
+                <!-- HERO BANNER -->
+                <div class="relative overflow-hidden bg-gradient-to-r from-slate-900 via-[#0a1122] to-slate-900 border border-slate-800/90 rounded-3xl p-8 shadow-2xl">
+                    <div class="absolute -right-10 -bottom-10 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    
+                    <div class="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                        <div class="space-y-2">
+                            <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-semibold">
+                                <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                                <span>Gerenciamento de Controle SEGOV IA</span>
+                            </div>
+                            <h2 class="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">
+                                Olá, <span id="userNameDisplay" class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">Usuário</span>!
+                                <button onclick="changeUserName()" class="text-slate-500 hover:text-cyan-400 text-xs ml-2 transition" title="Alterar nome exibido">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                            </h2>
+                            <p class="text-xs text-slate-400 max-w-2xl leading-relaxed">
+                                Seja bem-vindo ao seu sistema de controle da Secretaria de Governo. Gerencie planilhas operacionais, acompanhe indicadores em tempo real e gere relatórios gerenciais executivos.
+                            </p>
+                        </div>
+
+                        <div class="flex flex-wrap gap-3">
+                            <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5 flex items-center space-x-3 shadow-inner">
+                                <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                                    <i class="fa-solid fa-server text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] text-slate-500 font-bold uppercase">Sistema</p>
+                                    <p class="text-xs font-bold text-emerald-400">100% Operacional</p>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5 flex items-center space-x-3 shadow-inner">
+                                <div class="w-9 h-9 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
+                                    <i class="fa-solid fa-folder-tree text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] text-slate-500 font-bold uppercase">Planilhas</p>
+                                    <p id="bannerWorkbookCount" class="text-xs font-bold text-white">0 salvas</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ASSISTENTE IA DA SEGOV -->
+                <div class="bg-[#070b14] border border-slate-800/80 rounded-2xl p-6 shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2.5 bg-cyan-500/10 text-cyan-400 rounded-xl">
+                                <i class="fa-solid fa-robot text-base"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-white">Assistente Virtual SEGOV IA</h3>
+                                <p class="text-[11px] text-slate-400">Pergunte sobre dados da planilha ou use comandos por voz (Voz Feminina Natural)</p>
+                            </div>
+                        </div>
+                        <button onclick="startVoiceRecognition()" class="bg-slate-900 hover:bg-slate-800 text-cyan-400 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700/80 flex items-center space-x-2 transition shadow">
+                            <i class="fa-solid fa-microphone"></i>
+                            <span>Falar por Voz</span>
+                        </button>
+                    </div>
+
+                    <div id="aiChatBox" class="bg-slate-950 border border-slate-800 rounded-xl p-4 h-40 overflow-y-auto space-y-2 mb-3 text-xs">
+                        <div class="p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-300 max-w-xl">
+                            <strong class="text-cyan-400">Assistente IA:</strong> Olá! Estou pronta para auxiliar na análise dos dados da Secretaria de Governo.
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="aiInput" placeholder="Ex: Qual o total de registros? Quantas categorias existem?" onkeypress="if(event.key==='Enter') askAssistant()" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500 shadow-inner">
+                        <button onclick="askAssistant()" class="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition shadow-lg shadow-cyan-600/30">
+                            Enviar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- UPLOAD DE ARQUIVO -->
+                <div class="bg-[#070b14] border border-slate-800/80 rounded-2xl p-6 shadow-2xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h3 class="text-base font-bold text-white">Importar Nova Planilha</h3>
+                            <p class="text-xs text-slate-400 mt-1">Carregue um arquivo Excel (.xlsx, .csv) para criar um espaço de trabalho dedicado.</p>
+                        </div>
+                        <button onclick="document.getElementById('excelFileInput').click()" class="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition flex items-center space-x-2 shadow-lg shadow-cyan-600/20">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Nova Planilha</span>
+                        </button>
+                    </div>
+
+                    <div class="border-2 border-dashed border-slate-700/80 hover:border-cyan-500 rounded-2xl p-8 text-center bg-slate-950/40 transition cursor-pointer" onclick="document.getElementById('excelFileInput').click()">
+                        <div class="w-12 h-12 bg-cyan-500/10 text-cyan-400 rounded-2xl flex items-center justify-center mx-auto mb-3 text-xl shadow-inner">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                        </div>
+                        <h4 class="text-sm font-semibold text-slate-200">Arraste sua planilha Excel (.xlsx, .csv) ou clique aqui</h4>
+                        <p class="text-xs text-slate-500 mt-1">O sistema lerá os dados e alimentará a Torre de Controle e os Relatórios automaticamente.</p>
+                    </div>
+                </div>
+
+                <!-- LISTA DE PLANILHAS -->
+                <div class="bg-[#070b14] border border-slate-800/80 rounded-2xl p-6 shadow-2xl">
+                    <h3 class="text-base font-bold text-white mb-4">Planilhas Carregadas no Espaço de Trabalho</h3>
+                    <div id="workbooksListContainer" class="space-y-3"></div>
+                </div>
+            </section>
+
+            <!-- 2. TORRE DE CONTROLE -->
+            <section id="tab-dashboard" class="tab-content space-y-5 hidden">
+                <div class="bg-[#070b14] border border-slate-800/80 rounded-2xl p-4 shadow-xl flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center space-x-2 text-xs font-bold text-cyan-400 uppercase tracking-wider">
+                        <i class="fa-solid fa-filter"></i>
+                        <span>Filtros Dinâmicos da Planilha:</span>
+                    </div>
+                    <div id="dynamicFiltersContainer" class="flex flex-wrap items-center gap-3 flex-1 justify-end"></div>
+                    <button onclick="clearDashboardFilters()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl transition border border-slate-700">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> Limpar Filtros
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-5">
+                    <div class="bg-[#070b14] border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider">Registros Exibidos</p>
+                                <h3 id="kpiFilteredRecords" class="text-3xl font-extrabold text-white mt-1">0</h3>
+                            </div>
+                            <div class="p-3 bg-cyan-500/10 text-cyan-400 rounded-xl shadow-inner">
+                                <i class="fa-solid fa-users text-lg"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-800/80 flex justify-between text-[11px] text-slate-400">
+                            <span>Total na base:</span>
+                            <strong id="kpiTotalRecords" class="text-white">0</strong>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#070b14] border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-[11px] font-bold text-purple-400 uppercase tracking-wider">Maior Incidência (Top 1)</p>
+                                <h3 id="kpiTopIncidence" class="text-lg font-bold text-white mt-1 truncate max-w-[200px]" title="-">-</h3>
+                            </div>
+                            <div class="p-3 bg-purple-500/10 text-purple-400 rounded-xl shadow-inner">
+                                <i class="fa-solid fa-trophy text-lg"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-800/80 flex justify-between text-[11px] text-slate-400">
+                            <span>Ocorrências:</span>
+                            <strong id="kpiTopIncidenceCount" class="text-purple-400">0</strong>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#070b14] border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">Média por Categoria</p>
+                                <h3 id="kpiAveragePerCategory" class="text-3xl font-extrabold text-white mt-1">0</h3>
+                            </div>
+                            <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl shadow-inner">
+                                <i class="fa-solid fa-chart-line text-lg"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-800/80 flex justify-between text-[11px] text-slate-400">
+                            <span>Grupos ativos:</span>
+                            <strong id="kpiActiveGroups" class="text-white">0</strong>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#070b14] border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-[11px] font-bold text-amber-400 uppercase tracking-wider">Integridade da Base</p>
+                                <h3 class="text-2xl font-bold text-emerald-400 mt-1">100%</h3>
+                            </div>
+                            <div class="p-3 bg-amber-500/10 text-amber-400 rounded-xl shadow-inner">
+                                <i class="fa-solid fa-shield-halved text-lg"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-800/80 flex justify-between text-[11px] text-slate-400">
+                            <span>Ação rápida:</span>
+                            <button onclick="switchTab('sheet')" class="text-cyan-400 hover:underline font-semibold">Editar Dados</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    <div class="bg-[#070b14] border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col">
+                        <div class="flex justify-between items-center mb-3">
+                            <div>
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-white">Distribuição por Segmento</h3>
+                                <p class="text-[10px] text-slate-400">Análise proporcional numérica</p>
+                            </div>
+                            <span class="text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2.5 py-0.5 rounded font-semibold">Doughnut</span>
+                        </div>
+                        <div class="relative flex-1 flex items-center justify-center min-h-[260px]">
+                            <canvas id="distributionChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#070b14] border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col">
+                        <div class="flex justify-between items-center mb-3">
+                            <div>
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-white">Volume de Ocorrências por Categoria</h3>
+                                <p class="text-[10px] text-slate-400">Comparativo direto com valores reais</p>
+                            </div>
+                            <span class="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-0.5 rounded font-semibold">Colunas</span>
+                        </div>
+                        <div class="relative flex-1 flex items-center justify-center min-h-[260px]">
+                            <canvas id="barChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#070b14] border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col">
+                        <div class="flex justify-between items-center mb-3">
+                            <div>
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-white">Ranking Detalhado</h3>
+                                <p class="text-[10px] text-slate-400">Valores absolutos mapeados</p>
+                            </div>
+                            <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded font-semibold">Ranking</span>
+                        </div>
+                        <div class="relative flex-1 flex items-center justify-center min-h-[260px]">
+                            <canvas id="horizontalBarChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#070b14] border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col">
+                        <div class="flex justify-between items-center mb-3">
+                            <div>
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-white">Curva de Progressão / Sequência</h3>
+                                <p class="text-[10px] text-slate-400">Curva de fluxo numérico da base</p>
+                            </div>
+                            <span class="text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2.5 py-0.5 rounded font-semibold">Fluxo Suave</span>
+                        </div>
+                        <div class="relative flex-1 flex items-center justify-center min-h-[260px]">
+                            <canvas id="lineChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. PLANILHA DE EDIÇÃO -->
+            <section id="tab-sheet" class="tab-content space-y-5 hidden">
+                <div class="bg-[#070b14] border border-slate-800/80 rounded-2xl p-4 shadow-xl flex flex-wrap justify-between items-center gap-4">
+                    <div class="flex items-center space-x-3">
+                        <button onclick="addNewRow()" class="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition shadow flex items-center space-x-2">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Adicionar Linha</span>
+                        </button>
+                        <button onclick="addNewColumn()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl transition border border-slate-700 flex items-center space-x-2">
+                            <i class="fa-solid fa-table-columns"></i>
+                            <span>Adicionar Coluna</span>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <input type="text" id="sheetSearchInput" oninput="renderSheetTable()" placeholder="Filtrar dados da tabela..." class="bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 w-64">
+                        <button onclick="saveSheetChanges()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition shadow flex items-center space-x-2">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            <span>Salvar Alterações</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-[#070b14] border border-slate-800/80 rounded-2xl p-4 shadow-2xl overflow-x-auto max-h-[600px]">
+                    <table id="interactiveTable" class="w-full text-left text-xs border-collapse">
+                        <thead id="sheetThead" class="bg-slate-950 text-slate-400 font-semibold sticky top-0 z-10"></thead>
+                        <tbody id="sheetTbody" class="divide-y divide-slate-800/60"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- 4. PESQUISA AVANÇADA -->
+            <section id="tab-search" class="tab-content space-y-5 hidden">
+                <div class="bg-[#070b14] border border-slate-800/80 rounded-2xl p-6 shadow-2xl">
+                    <h3 class="text-base font-bold text-white mb-4">Pesquisa de Registros</h3>
+                    <div class="flex gap-3">
+                        <input type="text" id="globalSearchInput" onkeypress="if(event.key==='Enter') executeGlobalSearch()" placeholder="Digite o termo para buscar em todas as colunas..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500 shadow-inner">
+                        <button onclick="executeGlobalSearch()" class="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition shadow-lg shadow-cyan-600/30">
+                            Pesquisar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-[#070b14] border border-slate-800/80 rounded-2xl p-6 shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="text-sm font-bold text-white">Resultados Encontrados</h4>
+                        <span id="searchResultCount" class="text-xs font-semibold text-cyan-400">0 resultados</span>
+                    </div>
+                    <div id="searchResultsContainer" class="overflow-x-auto">
+                        <p class="text-xs text-slate-500 italic">Nenhuma busca realizada ainda.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. RELATÓRIOS GERAIS -->
+            <section id="tab-reports" class="tab-content space-y-6 hidden">
+                <div class="bg-[#070b14] border border-slate-800/80 rounded-2xl p-6 shadow-2xl no-print flex justify-between items-center">
+                    <div>
+                        <h3 class="text-base font-bold text-white">Relatório Executivo Gerencial</h3>
+                        <p class="text-xs text-slate-400 mt-1">Gere um documento formatado para impressão ou exportação em PDF.</p>
+                    </div>
+                    <button onclick="window.print()" class="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition shadow flex items-center space-x-2">
+                        <i class="fa-solid fa-print"></i>
+                        <span>Imprimir / Gerar PDF</span>
+                    </button>
+                </div>
+
+                <div id="printArea" class="print-card bg-[#070b14] border border-slate-800/80 rounded-3xl p-8 shadow-2xl space-y-6">
+                    <div class="border-b border-slate-800/80 pb-6 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-xl font-black text-white print-text-dark">SECRETARIA DE GOVERNO - SEGOV SOBRAL</h2>
+                            <p class="text-xs text-cyan-400 font-bold tracking-wider uppercase mt-1">Relatório Sintético de Operações e Indicadores</p>
+                        </div>
+                        <div class="text-right text-xs text-slate-400">
+                            <p>Data: <strong id="reportDateDisplay" class="text-white print-text-dark">-</strong></p>
+                            <p>Emissor: <strong id="reportUserDisplay" class="text-white print-text-dark">Usuário</strong></p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl print-card">
+                            <span class="text-[10px] text-slate-500 font-bold uppercase">Total Registrado</span>
+                            <h4 id="reportTotalCount" class="text-2xl font-bold text-cyan-400 print-text-dark">0</h4>
+                        </div>
+                        <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl print-card">
+                            <span class="text-[10px] text-slate-500 font-bold uppercase">Categorias Identificadas</span>
+                            <h4 id="reportCategoryCount" class="text-2xl font-bold text-purple-400 print-text-dark">0</h4>
+                        </div>
+                        <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl print-card">
+                            <span class="text-[10px] text-slate-500 font-bold uppercase">Status Geral</span>
+                            <h4 class="text-2xl font-bold text-emerald-400 print-text-dark">Validação OK</h4>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-xs font-bold text-white uppercase tracking-wider mb-3 print-text-dark">Resumo por Categoria Principal</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs print-table">
+                                <thead>
+                                    <tr class="border-b border-slate-800 text-slate-400">
+                                        <th class="py-2.5 px-3">Categoria</th>
+                                        <th class="py-2.5 px-3 text-right">Ocorrências</th>
+                                        <th class="py-2.5 px-3 text-right">Proporção (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reportTableBody" class="divide-y divide-slate-800/60 text-slate-300"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- SCRIPTS JS DO SISTEMA INTEGRADO -->
+    <script>
+        // --- 1. LISTA DE USUÁRIOS AUTORIZADOS (ADICIONE OU ALTERE AQUI OS LOGINS) ---
+        const authorizedUsers = [
+            { user: "renata.bastos", pass: "segov2026", name: "Renata Bastos" },
+            { user: "admin.segov", pass: "segov2026", name: "Administrador Segov" }
+            // Para adicionar novos logins, basta seguir o padrão acima separados por vírgula!
+        ];
+
+        let currentUser = "";
+        let currentUserName = "Usuário";
+        let workbooks = [];
+        let activeWorkbookIndex = -1;
+        let activeData = [];
+        let activeColumns = [];
+        let filteredData = [];
+        let dashboardFilters = {};
+
+        // Instância de gráficos da Torre de Controle
+        let chartInstances = {};
+
+        // --- 2. INICIALIZAÇÃO AO CARREGAR A PÁGINA ---
+        window.addEventListener('DOMContentLoaded', () => {
+            Chart.register(ChartDataLabels);
+            loadInitialData();
+            updateAllVisuals();
+            
+            // Pré-carrega vozes do navegador
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+            }
+        });
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const inputUser = document.getElementById('loginUser').value.trim();
+            const inputPass = document.getElementById('loginPassword').value.trim();
+            const errorDiv = document.getElementById('loginError');
+
+            // Valida na lista de usuários autorizados
+            const foundUser = authorizedUsers.find(u => u.user === inputUser && u.pass === inputPass);
+
+            if (foundUser) {
+                currentUser = foundUser.user;
+                currentUserName = foundUser.name;
+                document.getElementById('userNameDisplay').innerText = currentUserName;
+                document.getElementById('reportUserDisplay').innerText = currentUserName;
+                document.getElementById('loginScreen').classList.add('hidden');
+                errorDiv.classList.add('hidden');
+            } else {
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            document.getElementById('loginUser').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('loginScreen').classList.remove('hidden');
+        }
+
+        function changeUserName() {
+            const newName = prompt("Digite o novo nome exibido:", currentUserName);
+            if (newName) {
+                currentUserName = newName;
+                document.getElementById('userNameDisplay').innerText = currentUserName;
+                document.getElementById('reportUserDisplay').innerText = currentUserName;
+            }
+        }
+
+        function loadInitialData() {
+            const demoData = [
+                { "Distrito": "Caracaraí", "Categoria": "Infraestrutura", "Funcionários": 10, "Status": "Concluído" },
+                { "Distrito": "Aracatiaçu", "Categoria": "Saúde", "Funcionários": 5, "Status": "Em Andamento" },
+                { "Distrito": "Taperuaba", "Categoria": "Educação", "Funcionários": 8, "Status": "Concluído" },
+                { "Distrito": "Sede", "Categoria": "Administrativo", "Funcionários": 25, "Status": "Em Andamento" },
+                { "Distrito": "Patriarca", "Categoria": "Infraestrutura", "Funcionários": 12, "Status": "Pendente" },
+                { "Distrito": "Jaibaras", "Categoria": "Saúde", "Funcionários": 7, "Status": "Concluído" }
+            ];
+
+            workbooks = [{
+                id: 1,
+                name: "Planilha Exemplo - Secretaria de Governo",
+                columns: ["Distrito", "Categoria", "Funcionários", "Status"],
+                data: demoData
+            }];
+
+            activeWorkbookIndex = 0;
+            syncActiveWorkbook();
+        }
+
+        function syncActiveWorkbook() {
+            if (activeWorkbookIndex >= 0 && workbooks[activeWorkbookIndex]) {
+                const wb = workbooks[activeWorkbookIndex];
+                activeColumns = [...wb.columns];
+                activeData = [...wb.data];
+                filteredData = [...activeData];
+
+                document.getElementById('activeWorkbookName').innerText = wb.name;
+                document.getElementById('activeWorkbookSub').innerText = `${activeData.length} registros • ${activeColumns.length} colunas`;
+                document.getElementById('bannerWorkbookCount').innerText = `${workbooks.length} salvas`;
+                document.getElementById('recordCountBadge').innerText = `${filteredData.length} registros`;
+            } else {
+                activeColumns = [];
+                activeData = [];
+                filteredData = [];
+                document.getElementById('activeWorkbookName').innerText = "Nenhuma selecionada";
+                document.getElementById('activeWorkbookSub').innerText = "Carregada no workspace";
+                document.getElementById('recordCountBadge').innerText = "0 registros";
+            }
+            renderWorkbooksList();
+            renderDynamicFilters();
+            renderSheetTable();
+            updateReports();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(sec => sec.classList.add('hidden'));
+            const targetSec = document.getElementById(`tab-${tabId}`);
+            if (targetSec) targetSec.classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if (btn.getAttribute('data-target') === tabId) {
+                    btn.className = "nav-btn w-full flex items-center space-x-3.5 px-4 py-3 rounded-xl text-xs font-semibold transition bg-cyan-600 text-white shadow-lg shadow-cyan-600/30";
+                } else {
+                    btn.className = "nav-btn w-full flex items-center space-x-3.5 px-4 py-3 rounded-xl text-xs font-semibold transition text-slate-400 hover:bg-slate-800/50 hover:text-white";
+                }
+            });
+
+            const titles = {
+                'workbooks': 'Painel Principal - Espaço de Trabalho',
+                'dashboard': 'Torre de Controle - Indicadores Operacionais',
+                'sheet': 'Planilha de Edição Interativa',
+                'search': 'Pesquisa Avançada na Base',
+                'reports': 'Relatórios Gerais Executivos'
+            };
+            document.getElementById('currentSectionTitle').innerText = titles[tabId] || 'Gerência Segov IA';
+
+            updateAllVisuals();
+        }
+
+        // --- 3. ATUALIZAÇÃO GERAL DA TORRE DE CONTROLE ---
+        function updateDashboardVisuals() {
+            if (activeData.length === 0) return;
+
+            document.getElementById('kpiFilteredRecords').innerText = filteredData.length;
+            document.getElementById('kpiTotalRecords').innerText = activeData.length;
+
+            const labelCol = activeColumns.find(c => /categoria|distrito|status/i.test(c)) || activeColumns[0];
+            const grouped = {};
+            filteredData.forEach(r => {
+                const k = r[labelCol] || 'Outros';
+                grouped[k] = (grouped[k] || 0) + 1;
+            });
+
+            let topName = '-';
+            let topCount = 0;
+            for (const [k, v] of Object.entries(grouped)) {
+                if (v > topCount) {
+                    topCount = v;
+                    topName = k;
+                }
+            }
+            document.getElementById('kpiTopIncidence').innerText = topName;
+            document.getElementById('kpiTopIncidence').title = topName;
+            document.getElementById('kpiTopIncidenceCount').innerText = topCount;
+
+            const activeGroups = Object.keys(grouped).length;
+            const avg = activeGroups > 0 ? (filteredData.length / activeGroups).toFixed(1) : 0;
+            document.getElementById('kpiAveragePerCategory').innerText = avg;
+            document.getElementById('kpiActiveGroups').innerText = activeGroups;
+
+            const labels = Object.keys(grouped);
+            const values = Object.values(grouped);
+
+            createDashboardChart('distributionChart', 'doughnut', labels, values);
+            createDashboardChart('barChart', 'bar', labels, values);
+            createDashboardChart('horizontalBarChart', 'bar', labels, values, { indexAxis: 'y' });
+            createDashboardChart('lineChart', 'line', labels, values, { fill: true, tension: 0.4 });
+        }
+
+        function createDashboardChart(id, type, labels, data, extraOpts = {}) {
+            if (chartInstances[id]) chartInstances[id].destroy();
+            const ctx = document.getElementById(id).getContext('2d');
+            chartInstances[id] = new Chart(ctx, {
+                type: type,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Registros',
+                        data: data,
+                        backgroundColor: type === 'line' ? 'rgba(0, 242, 254, 0.15)' : ['#00f2fe', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'],
+                        borderColor: '#00f2fe',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: type === 'doughnut', position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 } } },
+                        datalabels: { color: '#fff', font: { weight: 'bold' } }
+                    },
+                    scales: type !== 'doughnut' ? {
+                        x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#1e293b' } },
+                        y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#1e293b' } }
+                    } : {},
+                    ...extraOpts
+                }
+            });
+        }
+
+        function updateAllVisuals() {
+            updateDashboardVisuals();
+            updateReports();
+        }
+
+        // --- 4. GERENCIAMENTO DE UPLOAD EXCEL E PLANILHAS ---
+        function handleExcelUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+                if (jsonData.length > 0) {
+                    const cols = Object.keys(jsonData[0]);
+                    const newWb = {
+                        id: Date.now(),
+                        name: file.name,
+                        columns: cols,
+                        data: jsonData
+                    };
+                    workbooks.push(newWb);
+                    activeWorkbookIndex = workbooks.length - 1;
+                    syncActiveWorkbook();
+                    updateAllVisuals();
+                    alert(`Planilha "${file.name}" importada com sucesso!`);
+                } else {
+                    alert("A planilha importada está vazia.");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function renderWorkbooksList() {
+            const container = document.getElementById('workbooksListContainer');
+            container.innerHTML = '';
+
+            workbooks.forEach((wb, idx) => {
+                const isActive = idx === activeWorkbookIndex;
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border transition flex justify-between items-center ${isActive ? 'bg-cyan-950/40 border-cyan-500/50' : 'bg-slate-950 border-slate-800'}`;
+                card.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2.5 rounded-lg ${isActive ? 'bg-cyan-500/20 text-cyan-300' : 'bg-slate-800 text-slate-400'}">
+                            <i class="fa-solid fa-file-excel text-base"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold ${isActive ? 'text-cyan-400' : 'text-white'}">${wb.name}</h4>
+                            <p class="text-[10px] text-slate-500">${wb.data.length} registros • ${wb.columns.length} colunas</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="selectWorkbook(${idx})" class="px-3 py-1.5 rounded-lg text-xs font-semibold ${isActive ? 'bg-cyan-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">
+                            ${isActive ? 'Ativa' : 'Selecionar'}
+                        </button>
+                        <button onclick="deleteWorkbook(${idx})" class="p-1.5 text-rose-400 hover:text-rose-300 transition">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function selectWorkbook(idx) {
+            activeWorkbookIndex = idx;
+            syncActiveWorkbook();
+            updateAllVisuals();
+        }
+
+        function deleteWorkbook(idx) {
+            if (confirm("Deseja realmente remover esta planilha?")) {
+                workbooks.splice(idx, 1);
+                activeWorkbookIndex = workbooks.length > 0 ? 0 : -1;
+                syncActiveWorkbook();
+                updateAllVisuals();
+            }
+        }
+
+        function exportCurrentWorkbook() {
+            if (activeData.length === 0) {
+                alert("Nenhuma planilha ativa para exportar.");
+                return;
+            }
+            const ws = XLSX.utils.json_to_sheet(filteredData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Dados");
+            XLSX.writeFile(wb, `${document.getElementById('activeWorkbookName').innerText}.xlsx`);
+        }
+
+        function resetAllData() {
+            if (confirm("Tem certeza que deseja apagar todos os dados importados?")) {
+                workbooks = [];
+                activeWorkbookIndex = -1;
+                syncActiveWorkbook();
+                updateAllVisuals();
+            }
+        }
+
+        // --- 5. FILTROS DINÂMICOS ---
+        function renderDynamicFilters() {
+            const container = document.getElementById('dynamicFiltersContainer');
+            container.innerHTML = '';
+
+            if (activeColumns.length === 0) return;
+
+            const filterCols = activeColumns.filter(c => /distrito|categoria|status|regiao/i.test(c)).slice(0, 3);
+            if (filterCols.length === 0) filterCols.push(activeColumns[0]);
+
+            filterCols.forEach(col => {
+                const uniqueVals = [...new Set(activeData.map(r => r[col]))].filter(Boolean);
+                const select = document.createElement('select');
+                select.className = "bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500";
+                select.innerHTML = `<option value="">Todas as opções (${col})</option>` + uniqueVals.map(v => `<option value="${v}">${v}</option>`).join('');
+                select.onchange = (e) => {
+                    if (e.target.value) {
+                        dashboardFilters[col] = e.target.value;
+                    } else {
+                        delete dashboardFilters[col];
+                    }
+                    applyDashboardFilters();
+                };
+                container.appendChild(select);
+            });
+        }
+
+        function applyDashboardFilters() {
+            filteredData = activeData.filter(row => {
+                for (const [col, val] of Object.entries(dashboardFilters)) {
+                    if (row[col] !== val) return false;
+                }
+                return true;
+            });
+            document.getElementById('recordCountBadge').innerText = `${filteredData.length} registros`;
+            updateAllVisuals();
+            renderSheetTable();
+        }
+
+        function clearDashboardFilters() {
+            dashboardFilters = {};
+            filteredData = [...activeData];
+            renderDynamicFilters();
+            applyDashboardFilters();
+        }
+
+        // --- 6. PLANILHA DE EDIÇÃO ---
+        function renderSheetTable() {
+            const thead = document.getElementById('sheetThead');
+            const tbody = document.getElementById('sheetTbody');
+            const searchTxt = document.getElementById('sheetSearchInput')?.value.toLowerCase() || '';
+
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+
+            if (activeColumns.length === 0) return;
+
+            let trHead = '<tr><th class="p-3 border-b border-slate-800 text-cyan-400 w-12 text-center">#</th>';
+            activeColumns.forEach((col, cIdx) => {
+                trHead += `
+                    <th class="p-3 border-b border-slate-800 font-semibold">
+                        <div class="flex items-center justify-between">
+                            <span contenteditable="true" onblur="updateColumnHeader(${cIdx}, this.innerText)" class="outline-none focus:text-cyan-400">${col}</span>
+                            <button onclick="deleteColumn(${cIdx})" class="text-slate-600 hover:text-rose-400 ml-2"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    </th>
+                `;
+            });
+            trHead += '<th class="p-3 border-b border-slate-800 text-center w-12">Ações</th></tr>';
+            thead.innerHTML = trHead;
+
+            filteredData.forEach((row, rIdx) => {
+                const rowStr = Object.values(row).join(' ').toLowerCase();
+                if (searchTxt && !rowStr.includes(searchTxt)) return;
+
+                let tr = `<tr class="hover:bg-slate-900/50"><td class="p-3 text-slate-500 text-center font-mono">${rIdx + 1}</td>`;
+                activeColumns.forEach(col => {
+                    const val = row[col] !== undefined ? row[col] : '';
+                    tr += `
+                        <td class="p-3 border-b border-slate-800/40">
+                            <input type="text" value="${val}" onchange="updateTableCell(${rIdx}, '${col}', this.value)" class="bg-transparent w-full text-xs text-slate-200 focus:bg-slate-950 focus:outline-none focus:border-cyan-500 rounded px-1.5 py-1">
+                        </td>
+                    `;
+                });
+                tr += `
+                    <td class="p-3 border-b border-slate-800/40 text-center">
+                        <button onclick="deleteRow(${rIdx})" class="text-slate-500 hover:text-rose-400 transition"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>`;
+                tbody.innerHTML += tr;
+            });
+        }
+
+        function updateTableCell(rIdx, col, val) {
+            filteredData[rIdx][col] = val;
+            saveActiveDataChanges();
+        }
+
+        function updateColumnHeader(cIdx, newName) {
+            const oldName = activeColumns[cIdx];
+            if (!newName || oldName === newName) return;
+
+            activeColumns[cIdx] = newName;
+            activeData.forEach(row => {
+                row[newName] = row[oldName];
+                delete row[oldName];
+            });
+            saveActiveDataChanges();
+        }
+
+        function addNewRow() {
+            const newRow = {};
+            activeColumns.forEach(c => newRow[c] = "");
+            activeData.push(newRow);
+            filteredData.push(newRow);
+            saveActiveDataChanges();
+            renderSheetTable();
+        }
+
+        function addNewColumn() {
+            const colName = prompt("Nome da nova coluna:");
+            if (colName && !activeColumns.includes(colName)) {
+                activeColumns.push(colName);
+                activeData.forEach(row => row[colName] = "");
+                saveActiveDataChanges();
+                renderSheetTable();
+            }
+        }
+
+        function deleteColumn(cIdx) {
+            const colName = activeColumns[cIdx];
+            if (confirm(`Remover a coluna "${colName}"?`)) {
+                activeColumns.splice(cIdx, 1);
+                activeData.forEach(row => delete row[colName]);
+                saveActiveDataChanges();
+                renderSheetTable();
+            }
+        }
+
+        function deleteRow(rIdx) {
+            activeData.splice(rIdx, 1);
+            filteredData.splice(rIdx, 1);
+            saveActiveDataChanges();
+            renderSheetTable();
+        }
+
+        function saveActiveDataChanges() {
+            if (activeWorkbookIndex >= 0 && workbooks[activeWorkbookIndex]) {
+                workbooks[activeWorkbookIndex].columns = [...activeColumns];
+                workbooks[activeWorkbookIndex].data = [...activeData];
+            }
+            updateAllVisuals();
+        }
+
+        function saveSheetChanges() {
+            saveActiveDataChanges();
+            alert("Alterações salvas com sucesso!");
+        }
+
+        // --- 7. PESQUISA AVANÇADA ---
+        function executeGlobalSearch() {
+            const term = document.getElementById('globalSearchInput').value.toLowerCase();
+            const container = document.getElementById('searchResultsContainer');
+            if (!term) return;
+
+            const results = activeData.filter(row => Object.values(row).some(v => String(v).toLowerCase().includes(term)));
+            document.getElementById('searchResultCount').innerText = `${results.length} resultados`;
+
+            if (results.length === 0) {
+                container.innerHTML = `<p class="text-xs text-rose-400">Nenhum registro encontrado para "${term}".</p>`;
+                return;
+            }
+
+            let html = '<table class="w-full text-left text-xs border-collapse"><thead class="bg-slate-950 text-slate-400"><tr>';
+            activeColumns.forEach(c => html += `<th class="p-3">${c}</th>`);
+            html += '</tr></thead><tbody class="divide-y divide-slate-800">';
+
+            results.forEach(row => {
+                html += '<tr class="hover:bg-slate-900">';
+                activeColumns.forEach(c => html += `<td class="p-3 text-slate-300">${row[c] || ''}</td>`);
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // --- 8. RELATÓRIOS E ASSISTENTE IA (VOZ FEMININA NATURAL E ÁGIL) ---
+        function updateReports() {
+            document.getElementById('reportDateDisplay').innerText = new Date().toLocaleDateString('pt-BR');
+            document.getElementById('reportTotalCount').innerText = filteredData.length;
+
+            const labelCol = activeColumns.find(c => /categoria|distrito/i.test(c)) || activeColumns[0];
+            const grouped = {};
+            filteredData.forEach(r => {
+                const k = r[labelCol] || 'Outros';
+                grouped[k] = (grouped[k] || 0) + 1;
+            });
+
+            document.getElementById('reportCategoryCount').innerText = Object.keys(grouped).length;
+
+            const tbody = document.getElementById('reportTableBody');
+            tbody.innerHTML = '';
+            for (const [cat, count] of Object.entries(grouped)) {
+                const pct = ((count / filteredData.length) * 100).toFixed(1);
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="py-2.5 px-3 font-semibold text-white print-text-dark">${cat}</td>
+                        <td class="py-2.5 px-3 text-right text-cyan-400 font-mono print-text-dark">${count}</td>
+                        <td class="py-2.5 px-3 text-right text-slate-400 font-mono print-text-dark">${pct}%</td>
+                    </tr>
+                `;
+            }
+        }
+
+        function askAssistant() {
+            const input = document.getElementById('aiInput');
+            const q = input.value.trim();
+            if (!q) return;
+
+            const chat = document.getElementById('aiChatBox');
+            chat.innerHTML += `<div class="p-2.5 bg-cyan-950/40 border border-cyan-800 rounded-lg text-cyan-200 text-right font-medium"><strong>Você:</strong> ${q}</div>`;
+
+            let reply = "Não consegui processar sua pergunta exata, tente perguntar sobre o total de registros ou categorias.";
+            const qLower = q.toLowerCase();
+
+            if (qLower.includes("total") || qLower.includes("quantos")) {
+                reply = `O total de registros na planilha ativa é de <strong>${activeData.length}</strong> linhas.`;
+            } else if (qLower.includes("categoria") || qLower.includes("distrito")) {
+                reply = `Identifiquei <strong>${activeColumns.length}</strong> colunas na base de dados ativa.`;
+            }
+
+            setTimeout(() => {
+                chat.innerHTML += `<div class="p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-300"><strong class="text-cyan-400">Assistente IA:</strong> ${reply}</div>`;
+                chat.scrollTop = chat.scrollHeight;
+            }, 400);
+
+            input.value = '';
+        }
+
+        function speakWelcomeMessage() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const welcomeText = `Olá, ${currentUserName}! Seja bem-vinda ao sistema Gerência Segov I.A da Secretaria de Governo. Todos os painéis de controle e relatórios operacionais estão prontos para uso.`;
+                const msg = new SpeechSynthesisUtterance(welcomeText);
+                msg.lang = 'pt-BR';
+                msg.rate = 1.18;
+                msg.pitch = 1.15;
+
+                const voices = window.speechSynthesis.getVoices();
+                const naturalFemaleVoice = voices.find(v => v.lang === 'pt-BR' && (v.name.includes('Francisca') || v.name.includes('Luciana') || v.name.includes('Maria') || v.name.includes('Google Português do Brasil') || v.name.includes('Microsoft 4'))) || voices.find(v => v.lang.includes('pt'));
+                
+                if (naturalFemaleVoice) {
+                    msg.voice = naturalFemaleVoice;
+                }
+
+                window.speechSynthesis.speak(msg);
+            } else {
+                alert("Síntese de voz não suportada neste navegador.");
+            }
+        }
+
+        function startVoiceRecognition() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                alert("Reconhecimento de voz não suportado neste navegador.");
+                return;
+            }
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'pt-BR';
+            recognition.onstart = () => alert("Pode falar agora...");
+            recognition.onresult = (e) => {
+                document.getElementById('aiInput').value = e.results[0][0].transcript;
+                askAssistant();
+            };
+            recognition.start();
+        }
+    </script>
+</body>
+</html>
